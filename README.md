@@ -15,3 +15,5 @@ Files:
 `model-best.h5` - saved weights to be loaded in Tensorflow.
 
 `tf_load.py` - main example showing my problem. See `PROBLEM` word in comments.
+
+Tensorflow versions tested: 1.2, 1.11-rc1
