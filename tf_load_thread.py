@@ -4,7 +4,9 @@ import os
 os.environ["CUDA_VISIBLE_DEVICES"]= ""
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
-from multiprocessing import Process, Queue
+#from multiprocessing import Process, Queue
+from threading import Thread
+from queue import Queue
 import tensorflow as tf
 
 import global_vars
@@ -13,20 +15,13 @@ import global_vars
 from keras.datasets import imdb
 (X_train, y_train), (X_test, y_test) = imdb.load_data(num_words = 100)
 
+# global variable to store finalized graph
 g = {} 
-tf_server_address = 'localhost:2222'
 NN_MODEL_FILE = 'model-best.h5'
     
-    
-# initialize tensorflow server
-def start_tf_server():
-    import tensorflow as tf
-    cluster = tf.train.ClusterSpec({"local": [tf_server_address]})
-    server = tf.train.Server(cluster, job_name="local", task_index=0)    
-    server.join()
         
 # model initializer
-def init_model_for_process(example):
+def init_model_for_thread(example):
     import tensorflow as tf
     from tensorflow.contrib.keras import models
     # create tensorflow graph
@@ -68,22 +63,18 @@ def function_which_uses_inference_model(some_data):
     model = g["model"]["NN_MODEL"]
     graph = g["model"]["GRAPH"]
     
-    # open session to server
-    sess = tf.Session('grpc://'+tf_server_address, graph=graph)
-    print('Opened server session')
-    
-    # PROBLEM: and I need to run variables initializer:
-    #sess.run(tf.global_variables_initializer())
-    
-    # Seems unnecessary
-    # Hangs on tf_session.TF_CloseSession(self._session)
-    # when launched from process in Tensorflow 1.11.0-rc1
-    # Does not hang in Tensorflow 1.2
-    #tf.contrib.keras.backend.set_session(sess)
     
     print('Making inference')
+    
+    # It seems that kears uses the same session across threads
+    
     # finally, make a call to server:
-    with sess.as_default():     
+    # the following throws uninitialized variables error:
+    # sess= tf.Session(graph=graph)
+    # with sess.as_default():
+    
+    # the following seems to use one session across threads:
+    with graph.as_default():
         x = tf.contrib.keras.preprocessing.sequence.pad_sequences(
                             some_data,
                             maxlen=300,
@@ -100,16 +91,9 @@ def function_which_uses_inference_model(some_data):
     
     
 if __name__ == "__main__":
-    # start tf server
-    p = Process(target=start_tf_server)
-    p.daemon=True
-    p.start()
-    
-    print('Tf server started')
-    
     # store model to be accessible for all modules
     # (simplified)
-    model = init_model_for_process(X_test[0])
+    model = init_model_for_thread(X_test[0])
     g["model"] = model
     print('Model initialized')
     
@@ -121,16 +105,26 @@ if __name__ == "__main__":
     
     
     
-    # Spawn the process
+    # Spawn the thread
     def foo(q):
         result = function_which_uses_inference_model(some_data) 
         q.put(result)
         return # I've read it is essential for destroying local variables
     q = Queue()
-    p = Process(target=foo,args=(q,))
-    p.start()
-    p.join()
-    result = q.get() # retrieve data
-    print('Process finished: {}'.format(result))
+    # run two concurrent threads to make sure session is not the problem
+    p1 = Thread(target=foo,args=(q,))
+    p2 = Thread(target=foo,args=(q,))
+    
+    p1.start()
+    p2.start()
+    
+    p1.join()
+    p2.join()
+    
+    result1 = q.get() # retrieve data
+    print('Thread finished: {}'.format(result1))
+    
+    result2 = q.get() # retrieve data
+    print('Thread finished: {}'.format(result2))
     
     
