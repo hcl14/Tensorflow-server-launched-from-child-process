@@ -17,3 +17,10 @@ Files:
 `tf_load.py` - main example showing my problem. See `PROBLEM` word in comments.
 
 Tensorflow versions tested: 1.2, 1.11-rc1
+
+
+EDIT:
+
+`tf_load_thread.py` - shows that problem is not existent for threads, as `tf.Session()` is thread-safe
+
+`tf_load_eager.py` - First solution to the problem, suggested by Allen Lavoie, which uses tensorflow eager execution. This requries saving model without optimizer (`model_converter_for_eager.py`, `model_without_opt.h5`). After that model starts to require float inputs instead of integers. 
