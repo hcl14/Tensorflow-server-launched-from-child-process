@@ -4,8 +4,7 @@
 
 
 
-Problematic example using `tf.train.Server`, which was subject of the question (working):
-----------------------------------------------------------------------------------------
+### Problematic example using `tf.train.Server`, which was subject of the question (working):
 
 Minimal reproducible example for the question https://stackoverflow.com/questions/52700621/
 
@@ -30,8 +29,7 @@ If you have import error, you may need to change imports: `tensorflow.contrib.ke
 
 
 
-Good working examples:
-------------------
+### Good working examples:
 
 1.`tf_load_thread.py` - shows that problem is not existent for threads, as `tf.Session()` is thread-safe
 
