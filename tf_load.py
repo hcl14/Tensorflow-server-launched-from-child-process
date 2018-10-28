@@ -57,7 +57,7 @@ def init_model_for_process(example):
         
         # PROBLEM: I want, but cannot lock graph, as child process 
         # wants to run its own tf.global_variables_initializer()
-        graph.finalize()
+        #graph.finalize()
 
         model["GRAPH"] = graph
         return model
@@ -73,7 +73,7 @@ def function_which_uses_inference_model(some_data):
     print('Opened server session')
     
     # PROBLEM: and I need to run variables initializer:
-    #sess.run(tf.global_variables_initializer())
+    sess.run(tf.global_variables_initializer())
     
     # Seems unnecessary
     # Hangs on tf_session.TF_CloseSession(self._session)
