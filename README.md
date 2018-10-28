@@ -1,5 +1,3 @@
-# Tensorflow-server-launched-from-child-process
-
 ## Different ways to call tensorflow model from multiprocessing process without huge memory and time overhead.
 
 
